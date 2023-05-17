@@ -1,4 +1,6 @@
 ﻿using ApiDemo01.Dto;
+using ApiDemo01.Helpers;
+using ApiDemo01.ResponseModule;
 using AutoMapper;
 using Core.Entities;
 using Core.Interfaces;
@@ -30,20 +32,26 @@ namespace ApiDemo01.Controllers
         }
 
         [HttpGet("GetProducts")]
-        public async Task<ActionResult<IReadOnlyList<ProductDto>>> GetProducts([FromQuery]ProductSpecParams productSpecParams)
+        public async Task<ActionResult<Pagination<ProductDto>>> GetProducts([FromQuery]ProductSpecParams productSpecParams)
         {
             var specs = new ProductsWithTypeAndBrandSpecifications(productSpecParams);
+            var countSpec = new ProductWithFiltersForCountSpecifications(productSpecParams);
+            var totalItem = await _productRepository.CountAsync(specs);
             var products = await _productRepository.GetListAsync(specs);
             var mappedProducts = _mapper.Map<IReadOnlyList<ProductDto>>(products);
-            return Ok(mappedProducts);
+            var paginatedData = new Pagination<ProductDto>(productSpecParams.PageIndex, productSpecParams.PageSize,totalItem ,mappedProducts);
+            return Ok(paginatedData);
         }
         [HttpGet("GetProduct")]
+        //[ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponce),StatusCodes.Status404NotFound)]
+
         public async Task<ActionResult<ProductDto>> GetProduct(int id)
         {
             var specs = new ProductsWithTypeAndBrandSpecifications(id);
             var Product = await _productRepository.GetEntityWithSpecifications(specs);
             if(Product == null)
-                return NotFound();
+                return NotFound(new ApiResponce(404));
             var mappedProducts = _mapper.Map<ProductDto>(Product);
 
             return Ok(mappedProducts); 

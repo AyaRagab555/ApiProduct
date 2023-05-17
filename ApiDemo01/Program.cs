@@ -1,7 +1,11 @@
-using ApiDemo01.Helpers;
-using Core.Interfaces;
+using ApiDemo01.Extensions;
+using ApiDemo01.MiddleWare;
+using Core.Entities.Identity;
 using Infrastructure.Data;
+using Infrastructure.Identity;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using StackExchange.Redis;
 
 namespace ApiDemo01
 {
@@ -15,16 +19,22 @@ namespace ApiDemo01
             {
                 option.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
             });
-            builder.Services.AddScoped<IProductRepository, ProductRepository>();
+            builder.Services.AddDbContext<AppIdentityDbContext>(option =>
+            {
+                option.UseSqlServer(builder.Configuration.GetConnectionString("IdentityConnection"));
+            });
             // Add services to the container.
-            builder.Services.AddAutoMapper(typeof(MappingProfiles));
-            builder.Services.AddScoped(typeof(IGenericRepository<>),typeof(GenericRepository<>));
-            builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
-
+            builder.Services.AddSingleton<IConnectionMultiplexer>(config =>
+            {
+                var configration = ConfigurationOptions.Parse(builder.Configuration.GetConnectionString("Redis"), true);
+                return ConnectionMultiplexer.Connect(configration);
+            });
+            builder.Services.AddApplicationServices();
+            builder.Services.AddIdentityServices(builder.Configuration);
+            builder.Services.AddSwaggerDecumentaion();
             builder.Services.AddControllers();
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-            builder.Services.AddEndpointsApiExplorer();
-            builder.Services.AddSwaggerGen();
+           
 
             var app = builder.Build();
 
@@ -35,8 +45,14 @@ namespace ApiDemo01
                 try
                 {
                     var context = services.GetRequiredService<StoreDbContext>();
-                    await context.Database.MigrateAsync();
+                    await context.Database.MigrateAsync(); 
                     await StoreDbContextSeed.SeedAsync(context, loggerFactory);
+
+                    var userManger = services.GetRequiredService<UserManager<AppUser>>();
+                    var identityContext = services.GetRequiredService<AppIdentityDbContext>();
+                    await identityContext.Database.MigrateAsync();
+                    await AppIdentityDbContextSeed.SeedUserAsync(userManger);
+
                 }
                 catch (Exception ex)
                 {
@@ -50,12 +66,16 @@ namespace ApiDemo01
             if (app.Environment.IsDevelopment())
             {
                 app.UseSwagger();
-                app.UseSwaggerUI();
+                app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json" , "Api Demo v1"));
             }
+
+            app.UseMiddleware<ExceptionMiddleWare>();
 
             app.UseStaticFiles();
 
             app.UseHttpsRedirection();
+
+            app.UseAuthentication();
 
             app.UseAuthorization();
 

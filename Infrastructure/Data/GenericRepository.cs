@@ -21,12 +21,15 @@ namespace Infrastructure.Data
         public void Add(T Entity)
             => _context.Set<T>().Add(Entity);
 
+        public async Task<int> CountAsync(ISpecifications<T> specifications)
+            => await ApplySpecifications(specifications).CountAsync();
+
         public void Delete(T Entity)
             => _context.Set<T>().Remove(Entity);
 
 
         public async Task<T> GetByIdAsync(int id)
-            =>await _context.Set<T>().FindAsync(id);
+            => await _context.Set<T>().FindAsync(id);
 
         public async Task<T> GetEntityWithSpecifications(ISpecifications<T> specifications)
             => await ApplySpecifications(specifications).FirstOrDefaultAsync();
