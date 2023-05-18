@@ -13,6 +13,8 @@ namespace ApiDemo01.Dto
         public IReadOnlyList<OrderItemDto> OrderItems { get; set; }
         public decimal SubTotal { get; set; }
         public string OrderStatus { get; set; }
+        public string PaymentIntentId { get; set; }
+
         public decimal Total { get; set; }
 
     }

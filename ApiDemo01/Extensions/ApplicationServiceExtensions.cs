@@ -17,6 +17,8 @@ namespace ApiDemo01.Extensions
             services.AddScoped<IBasketRepository, BasketRepository>();
             services.AddScoped<ITokenServices , TokenServices>();
             services.AddScoped<IOrderService , OrderService>();
+            services.AddScoped<IPaymentService, PaymentService>();
+            services.AddScoped<IResponseCacheService, ResponseCacheService>();
             services.AddAutoMapper(typeof(MappingProfiles));
 
 

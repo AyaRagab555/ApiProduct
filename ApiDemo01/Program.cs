@@ -33,6 +33,13 @@ namespace ApiDemo01
             builder.Services.AddIdentityServices(builder.Configuration);
             builder.Services.AddSwaggerDecumentaion();
             builder.Services.AddControllers();
+
+            builder.Services.AddCors(option =>
+                option.AddPolicy("CrosPolicy", policy =>
+                {
+                    policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod().SetIsOriginAllowed(orgin => true);
+                })
+            ) ;
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
            
 
@@ -72,6 +79,8 @@ namespace ApiDemo01
             app.UseMiddleware<ExceptionMiddleWare>();
 
             app.UseStaticFiles();
+
+            app.UseCors("CrosPolicy");
 
             app.UseHttpsRedirection();
 
